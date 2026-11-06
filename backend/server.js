@@ -3,13 +3,17 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const db = require("./database");
 const jwt = require("jsonwebtoken");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const SECRET_KEY = "super_secret_key_that_should_not_be_here";
 
 app.use(cors());
 app.use(bodyParser.json());
+
+app.get("/healthz", (_req, res) => res.status(200).send("ok"));
 
 const userCarts = {};
 
@@ -567,6 +571,24 @@ app.put("/api/admin/orders/:id/status", authenticateToken, (req, res) => {
   );
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+// Serve the built React apps from the same origin as the API on Render.
+const webDist = path.resolve(__dirname, "../frontend-web/dist");
+const adminDist = path.resolve(__dirname, "../frontend-admin/dist");
+
+if (fs.existsSync(adminDist)) {
+  app.use("/admin", express.static(adminDist));
+  app.get(/^\/admin(?:\/.*)?$/, (_req, res) => {
+    res.sendFile(path.join(adminDist, "index.html"));
+  });
+}
+
+if (fs.existsSync(webDist)) {
+  app.use(express.static(webDist));
+  app.get(/^(?!\/api(?:\/|$)|\/healthz$).*$/, (_req, res) => {
+    res.sendFile(path.join(webDist, "index.html"));
+  });
+}
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on port ${PORT}`);
 });

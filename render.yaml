@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: eshop-sut-testing
+    runtime: node
+    plan: free
+    buildCommand: npm ci --prefix backend && npm ci --prefix frontend-web && npm run build --prefix frontend-web && npm ci --prefix frontend-admin && npm run build --prefix frontend-admin -- --base=/admin/
+    startCommand: node backend/server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 24.11.1
